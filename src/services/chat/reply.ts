@@ -323,13 +323,13 @@ export const toRequestMessages = (
     if (pendingReminder) {
       const reminder = pendingReminder
       pendingReminder = undefined
-      const blocks =
+      const blocks: (FileBlockParam | TextBlockParam)[] =
         typeof param.content === 'string'
           ? [
-              { type: 'text' as const, text: reminder },
+              { type: 'text', text: reminder },
               ...(param.content ? [{ type: 'text' as const, text: param.content }] : []),
             ]
-          : [{ type: 'text' as const, text: reminder }, ...param.content]
+          : [{ type: 'text', text: reminder }, ...param.content]
       messages.push({ role: 'user', content: blocks })
     } else {
       messages.push(param)
