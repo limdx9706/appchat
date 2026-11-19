@@ -1,0 +1,16 @@
+# Cloudflare Pages 自定义响应头（public/ 随构建原样拷贝到 dist/）
+# CSP 说明：
+# - connect-src 只放行 api.deepseek.com：设置页「API 地址」若指向自建代理，须把代理域名加进来
+# - img-src 放行 https:：联网搜索返回的站点图标（siteIcon）是外部 URL，收紧会导致图标全部裂掉
+# - style-src 'unsafe-inline'：KaTeX / mermaid 渲染依赖运行时内联样式
+
+/*
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.deepseek.com; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+
+/sw.js
+  Cache-Control: no-cache
+
+/asset-manifest.json
+  Cache-Control: no-cache
