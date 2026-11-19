@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart LR
-    C[Cloudflare Pages<br/>纯静态托管] --|HTML/JS/CSS| A
+    C[EdgeOne Pages<br/>纯静态托管·全球含大陆] --|HTML/JS/CSS| A
     subgraph 用户浏览器
         A[AppChat 前端<br/>PWA] --|Key 只存 localStorage| A
     end
@@ -16,7 +16,7 @@ flowchart LR
     B --|SSE 流式响应| A
 ```
 
-- 前端全部静态产物，托管在 Cloudflare Pages（海外节点，域名无需备案）
+- 前端全部静态产物，托管在腾讯云 EdgeOne Pages，加速区域「全球可用（含中国大陆）」——大陆用户走国内节点（域名已备案），海外用户走腾讯海外节点
 - 聊天请求由浏览器直连 `api.deepseek.com`（已实测 CORS 放行全部 5 个端点，见 `scripts/cors-check.sh`）
 - 运营方（页面托管者）无法接触任何用户的 API Key 与对话内容
 
@@ -26,7 +26,7 @@ flowchart LR
 - 历史对话导入 / 导出（兼容 DeepSeek 官方 App 导出的 ZIP）
 - 中文 / 英文界面、浅色 / 深色主题
 - PWA：可安装到主屏，Service Worker 预缓存应用外壳支持离线打开（绝不缓存 API 响应）
-- 设置页可覆盖 API 地址（为自建代理留门；对应 CSP 需同步调整，见 `public/_headers`）
+- 设置页可覆盖 API 地址（为自建代理留门；对应 CSP 需同步调整，见 `edgeone.json`）
 
 ## 面向用户的隐私声明（模板）
 
@@ -52,17 +52,25 @@ pnpm cors-check   # api.deepseek.com 五端点 CORS 预检
 
 所有品牌信息集中在 `src/brand.ts`：应用名、短名、描述、主题色、背景色。改完后重新 `pnpm build`（如改了图标源文件再跑 `pnpm icons`），页面标题、manifest、系统提示词即全部生效。
 
-## 部署（Cloudflare Pages）
+## 部署（EdgeOne Pages，全球含大陆）
 
 ```sh
+npm install -g edgeone     # EdgeOne CLI
 pnpm build
-npx wrangler pages project create appchat
-npx wrangler pages deploy dist --project-name appchat
+edgeone login              # 浏览器弹窗授权腾讯云账号（大陆加速 + 备案走中国站）
+edgeone makers deploy ./dist -n appchat
 ```
 
-自定义域名：Pages 控制台 → appchat 项目 → Custom domains → 添加 `chat.ldx9706.cloud`，
-再到 DNSPod 控制台为该子域添加 CNAME 记录指向 Pages 分配的 `<project>.pages.dev`。
-（域名托管在腾讯云 DNSPod；海外托管无需备案。）
+部署后控制台核对两件事：
+
+1. **加速区域**：项目详情里确认为「全球可用（含中国大陆）」——CLI 自动创建的项目默认值若不含大陆，改此项后需重新触发部署生效。
+2. **自定义域名**：项目设置 → 添加 `chat.ldx9706.cloud`，控制台会给出精确的 CNAME 记录值，到 DNSPod 控制台为该子域添加这条 CNAME 即可。
+
+备案提示：域名已有 ICP 备案；若备案接入商不含腾讯云，需在腾讯云做一次「新增接入」（一般 1-3 天，期间不影响现有服务）。
+
+安全响应头（CSP 等）已写入 **`edgeone.json`**（构建时随产物上传至 `dist/edgeone.json`），无需再在控制台规则引擎手动配置；规则引擎可作为备用方案。
+
+将来海外用户变多时，可另建 Cloudflare Pages 项目加一个海外子域双部署（把 `edgeone.json` 的 CSP 恢复成 `_headers` 文件格式即可），本次不做。
 
 ## 安卓 APK（TWA）
 

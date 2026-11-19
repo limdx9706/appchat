@@ -8,7 +8,7 @@ A bring-your-own-key (BYOK) chat app for the DeepSeek API. Forked from [deepseek
 
 ```mermaid
 flowchart LR
-    C[Cloudflare Pages<br/>static hosting] --|HTML/JS/CSS| A
+    C[EdgeOne Pages<br/>static hosting · global incl. CN] --|HTML/JS/CSS| A
     subgraph User's browser
         A[AppChat frontend<br/>PWA] --|Key lives in localStorage only| A
     end
@@ -16,7 +16,7 @@ flowchart LR
     B --|SSE streaming| A
 ```
 
-- Fully static output hosted on Cloudflare Pages (no ICP filing needed for an overseas host)
+- Fully static output hosted on Tencent EdgeOne Pages with the acceleration area "Global (incl. Mainland China)" — mainland users hit domestic edge nodes (the domain is ICP-filed), overseas users hit Tencent's global nodes
 - Chat requests go straight from the browser to `api.deepseek.com` (CORS verified on all 5 endpoints — see `scripts/cors-check.sh`)
 - The site operator never sees any user's API key or conversations
 
@@ -26,7 +26,7 @@ flowchart LR
 - Chat history import/export (compatible with DeepSeek official app ZIP exports)
 - Chinese / English UI, light / dark themes
 - Installable PWA: service worker precaches the app shell for offline use (API responses are never cached)
-- Optional API endpoint override in Settings (a hook for self-hosted proxies; adjust the CSP in `public/_headers` accordingly)
+- Optional API endpoint override in Settings (a hook for self-hosted proxies; adjust the CSP in `edgeone.json` accordingly)
 
 ## Privacy statement (user-facing template)
 
@@ -53,16 +53,25 @@ pnpm cors-check   # CORS preflight against the 5 API endpoints
 
 All brand fields live in `src/brand.ts`: app name, short name, description, theme and background colors. Re-run `pnpm build` (plus `pnpm icons` if you changed the icon source) and the page title, manifest, and system prompt all update.
 
-## Deploy (Cloudflare Pages)
+## Deploy (EdgeOne Pages, global incl. mainland China)
 
 ```sh
+npm install -g edgeone     # EdgeOne CLI
 pnpm build
-npx wrangler pages project create appchat
-npx wrangler pages deploy dist --project-name appchat
+edgeone login              # browser popup, Tencent Cloud account (China site for mainland acceleration + ICP)
+edgeone makers deploy ./dist -n appchat
 ```
 
-Custom domain: Pages console → appchat → Custom domains → add `chat.ldx9706.cloud`, then add a
-CNAME record for that subdomain in your DNS provider pointing at the assigned `<project>.pages.dev`.
+Two things to verify in the console after deploying:
+
+1. **Acceleration area**: confirm the project is set to "Global (incl. Mainland China)" — if the CLI auto-created it with a different default, change this and redeploy.
+2. **Custom domain**: project settings → add `chat.ldx9706.cloud`; the console shows the exact CNAME value to add for that subdomain at your DNS provider.
+
+ICP note: the domain already has a filing; if your filing's hosting provider list doesn't include Tencent Cloud, file an "add provider" (新增接入) transfer first (usually 1-3 days, no downtime for existing services).
+
+Security headers (CSP etc.) live in **`edgeone.json`** (copied into `dist/` at build time) — no manual console rules-engine setup needed; the rules engine remains a fallback.
+
+If overseas traffic grows later, a second Cloudflare Pages project with an overseas subdomain can be added alongside (convert `edgeone.json` headers back into a `_headers` file); out of scope for now.
 
 ## Android APK (TWA)
 

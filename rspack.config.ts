@@ -162,7 +162,9 @@ export const createConfig = ({
     new rspack.CopyRspackPlugin({
       patterns: [
         { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
-        // public/：Service Worker、Cloudflare Pages 的 _headers、图标与 .well-known
+        // edgeone.json：EdgeOne Pages 的安全响应头配置，随产物上传兜底直传部署
+        { from: path.resolve(root, 'edgeone.json'), to: 'edgeone.json', toType: 'file' },
+        // public/：图标与 .well-known（assetlinks）
         {
           from: path.resolve(root, 'public'),
           globOptions: { ignore: ['**/.DS_Store'] },
