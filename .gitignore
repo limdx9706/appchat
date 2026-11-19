@@ -9,3 +9,9 @@ build/
 .env.*
 !.env.example
 tmp/
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
+  
