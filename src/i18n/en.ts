@@ -1,3 +1,4 @@
+import { brand } from '../brand.js'
 import type { zh } from './zh.js'
 
 export const en = {
@@ -14,7 +15,7 @@ export const en = {
     'Chats or attachments have not been saved locally. Retry before closing this page.',
   sessionDeleteFailed: 'Unable to delete this chat. Please try again.',
   settings: 'Settings',
-  appName: 'API usage demo',
+  appName: brand.appName,
   deleteSessionModalContentTitle: 'Delete chat?',
   deleteSessionWithFilesDescription:
     'This chat and its uploaded files will be permanently deleted and cannot be recovered. Delete this chat?',
@@ -83,7 +84,8 @@ export const en = {
   groupTitleToolOpen: 'Browsing the web',
   messageThinking: 'Thinking',
   backupInvalidJson: 'The file is not valid JSON.',
-  backupUnrecognized: 'File not recognized. Please choose a DeepSeek chat history ZIP.',
+  backupUnrecognized:
+    'File not recognized. Please choose a chat history ZIP exported from the DeepSeek official app.',
   backupNewerVersion: 'This file uses a newer version. Please update the app before importing.',
   backupInvalidVersion: 'The file version is invalid and cannot be imported.',
   backupIncomplete: 'The file is incomplete and cannot be imported.',
@@ -116,11 +118,11 @@ export const en = {
   historyImportConfirmDescription:
     'The uploaded chat history will replace all your current chats. Import anyway?',
   historyImportDescription:
-    'Importing chat history replaces all local chats and attachments. Supports ZIP files exported from DeepSeek.',
+    'Importing chat history replaces all local chats and attachments. Supports ZIP files exported from the DeepSeek official app.',
   historyImportedOne: 'Imported 1 chat',
   historyImported: 'Imported {count} chats',
   historyImportFailed:
-    'File import failed. The file format may be invalid, or the ZIP file may use an older chat export format. Please export your chat history from DeepSeek again and retry the import.',
+    'File import failed. The file format may be invalid, or the ZIP file may use an older chat export format. Please re-export your chat history from the DeepSeek official app and retry the import.',
   historyExportFailed: 'Export failed: {message}',
   exportAllLabel: 'Export all chats',
   historyExportDescription:
@@ -178,4 +180,11 @@ export const en = {
   latestReminderLanguage: 'English',
   settingsLocaleZhCN: 'Simplified Chinese',
   settingsLocaleEnUS: 'English',
+  settingsApiOrigin: 'API Endpoint',
+  settingsApiOriginDescription:
+    'Defaults to https://api.deepseek.com. You can point it to your own proxy; the page reloads after saving.',
+  settingsApiOriginPlaceholder: 'https://api.deepseek.com',
+  settingsApiOriginReset: 'Reset',
+  settingsApiOriginInvalid:
+    'Enter a URL starting with https:// (http://localhost is allowed for local testing)',
 } satisfies Record<keyof typeof zh, string>
