@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "cloud.ldx9706.appchat",
+      "sha256_cert_fingerprints": [
+        "3C:3E:7B:27:90:02:2B:B4:DE:F8:78:86:F5:9A:14:E1:BC:F3:5D:10:E5:35:07:7E:CE:37:DE:86:DC:94:F1:38"
+      ]
+    }
+  }
+]
