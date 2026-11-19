@@ -309,11 +309,30 @@ export const toRequestMessages = (
 ): MessageParam[] => {
   const messages: MessageParam[] = []
   let previousReminder: string | undefined
+  // latest_reminder 是 DeepSeek Chat Engine 扩展角色，Anthropic 兼容端点（如 GLM 网关）会拒绝；
+  // 改为并入相邻 user 消息的首个文本块，对 DeepSeek 官方端点与其他兼容端点都成立。
+  let pendingReminder: string | undefined
   const appendReminder = (reminder: string | undefined) => {
     // 仅在当前分支首次出现或内容变化时插入快照；缺少快照的消息保持原有内容。
     if (reminder && reminder !== previousReminder) {
-      messages.push({ role: 'latest_reminder', content: reminder })
+      pendingReminder = reminder
       previousReminder = reminder
+    }
+  }
+  const pushUser = (param: MessageParam) => {
+    if (pendingReminder) {
+      const reminder = pendingReminder
+      pendingReminder = undefined
+      const blocks =
+        typeof param.content === 'string'
+          ? [
+              { type: 'text' as const, text: reminder },
+              ...(param.content ? [{ type: 'text' as const, text: param.content }] : []),
+            ]
+          : [{ type: 'text' as const, text: reminder }, ...param.content]
+      messages.push({ role: 'user', content: blocks })
+    } else {
+      messages.push(param)
     }
   }
   for (const [user, reply] of getContextRounds(history)) {
@@ -322,10 +341,11 @@ export const toRequestMessages = (
       continue
     }
     appendReminder(reply.latestReminder)
-    messages.push(toUserParam(user), toAssistantParam(reply))
+    pushUser(toUserParam(user))
+    messages.push(toAssistantParam(reply))
   }
   appendReminder(latestReminder)
-  messages.push(toUserParam(question))
+  pushUser(toUserParam(question))
   if (prefix?.prefix) {
     const assistant = toAssistantParam(prefix, true, thinking)
     // 没有非空白正文或有效思考时直接重发原问题，避免服务端拒绝空 Prefill。
