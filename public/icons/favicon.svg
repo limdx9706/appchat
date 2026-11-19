@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 图标源文件：scripts/gen-icons.mjs 由此生成 public/icons/ 下全部 PNG -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f6ef7" />
+      <stop offset="1" stop-color="#7c3aed" />
+    </linearGradient>
+  </defs>
+  <!-- 全出血背景：同时满足普通与 maskable 图标 -->
+  <rect width="512" height="512" fill="url(#bg)" />
+  <!-- 白色对话气泡，主体控制在 maskable 安全区（中心 80%）内 -->
+  <path
+    fill="#ffffff"
+    d="M 256 132
+       c 96 0 158 34 158 90
+       c 0 56 -62 90 -158 90
+       c -14 0 -27 -1 -40 -3
+       l -52 41
+       c -8 6 -19 0 -17 -10
+       l 8 -42
+       c -34 -17 -57 -42 -57 -76
+       c 0 -56 62 -90 158 -90 z"
+  />
+  <circle cx="196" cy="222" r="20" fill="#4f6ef7" />
+  <circle cx="256" cy="222" r="20" fill="#5c5ce0" />
+  <circle cx="316" cy="222" r="20" fill="#7c3aed" />
+</svg>
