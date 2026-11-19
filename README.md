@@ -1,75 +1,87 @@
-# chat-demo
+# AppChat
 
 English | [简体中文](README.zh-CN.md)
 
-A static chat demo powered by the DeepSeek API. No application backend is required: the browser connects directly to the configured API service.
+A bring-your-own-key (BYOK) chat app for the DeepSeek API. Forked from [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo) (commit `5d5dd75`, MIT) and deployed as a fully static site. **Your API Key is stored only in your browser's localStorage and never touches any server of ours.**
 
-You can [try the app online](https://deepseek-ai.github.io/chat-demo/) or download the archive from [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases), extract it, and double-click `index.html` to use it locally without installation or a build. Enter your API key in Settings before your first chat.
+## Architecture
 
-## Getting started
-
-Install Node.js 22.12+ and pnpm, then run:
-
-```sh
-git clone https://github.com/deepseek-ai/chat-demo.git
-cd chat-demo
-pnpm install
-pnpm dev
+```mermaid
+flowchart LR
+    C[Cloudflare Pages<br/>static hosting] --|HTML/JS/CSS| A
+    subgraph User's browser
+        A[AppChat frontend<br/>PWA] --|Key lives in localStorage only| A
+    end
+    A --|direct from the browser · key in headers| B[api.deepseek.com]
+    B --|SSE streaming| A
 ```
 
-Open http://localhost:8090.
-
-To build the static site:
-
-```sh
-pnpm build
-```
-
-The output is written to `dist/`. Deploy it to a static web server or open `dist/index.html` directly. Opening the file directly requires browser support for storage on `file://` pages and an API service that permits their cross-origin requests.
+- Fully static output hosted on Cloudflare Pages (no ICP filing needed for an overseas host)
+- Chat requests go straight from the browser to `api.deepseek.com` (CORS verified on all 5 endpoints — see `scripts/cors-check.sh`)
+- The site operator never sees any user's API key or conversations
 
 ## Features
 
-- Multiple conversations with automatic titles, renaming, and deletion; edit prompts, regenerate replies, and switch between message branches.
-- Streaming replies, deep thinking, smart search, link reading, and source citations; stop generation or continue eligible replies.
-- Upload, paste, or drag and drop attachments; use voice input and read replies aloud. A live audio spectrum appears in the first row of the input area while recording on mobile.
-- Markdown, syntax highlighting, KaTeX math, and Mermaid diagrams.
-- Simplified Chinese and English, light and dark themes, mobile layouts, location settings, and chat history import and export.
+- Streaming chat, DeepThink, web search, file uploads, voice input & read-aloud
+- Chat history import/export (compatible with DeepSeek official app ZIP exports)
+- Chinese / English UI, light / dark themes
+- Installable PWA: service worker precaches the app shell for offline use (API responses are never cached)
+- Optional API endpoint override in Settings (a hook for self-hosted proxies; adjust the CSP in `public/_headers` accordingly)
 
-## Data and storage
+## Privacy statement (user-facing template)
 
-Your API key and settings are stored in the browser's localStorage. Conversations and original attachments are stored in IndexedDB. Local data is isolated by browser profile and site origin. Sending messages, uploading attachments, and using speech features sends the relevant content to the configured API service.
-
-History import and export in Settings use ZIP archives. After confirmation and successful validation, importing replaces all local conversations and attachments. Exports include conversations and locally available original images, but exclude API keys, settings, and original non-image attachments. See the [history import/export documentation (Chinese)](src/services/chat/history/README.md) for the archive format and preservation details.
-
-Settings → Data → Delete all chats clears all local conversations, original attachments, and unsent drafts after confirmation. It stops ongoing replies and returns to a new chat. Your API key and settings are preserved; files already uploaded to the API service are not deleted.
+> This app has no accounts and collects nothing. Your DeepSeek API Key is stored only in your
+> own browser's localStorage and is used solely to call api.deepseek.com directly — it is never
+> sent to this site or any third party. Chats live in your browser's IndexedDB; exported files
+> are yours to keep. Clearing browser data deletes everything.
 
 ## Development
 
-| Command       | Description                  |
-| ------------- | ---------------------------- |
-| `pnpm dev`    | Start the development server |
-| `pnpm build`  | Build into `dist/`           |
-| `pnpm type`   | Run TypeScript type checks   |
-| `pnpm lint`   | Lint with oxlint             |
-| `pnpm format` | Format with oxfmt            |
+Requires Node.js 22.12+ and pnpm:
 
-[rspack.config.ts](rspack.config.ts) uses `https://api.deepseek.com` by default. Use `createConfig({ apiOrigin, devServer })` to customize the API origin and development server proxy.
+```sh
+pnpm install
+pnpm dev          # http://localhost:8090
+pnpm type         # type check
+pnpm lint         # oxlint
+pnpm build        # outputs to dist/
+pnpm icons        # regenerate PWA icons after editing src/brand/icon.svg
+pnpm cors-check   # CORS preflight against the 5 API endpoints
+```
 
-Chat uses `deepseek-flash` by default through Anthropic-compatible Messages / Files APIs. Speech features use ASR / TTS endpoints. Requests include extensions for search, link reading, titles, and `latest_reminder`, so the configured service must support the corresponding capabilities. Supported attachment formats are determined by server-side validation.
+### Rebranding
 
-```text
-src/
-  app/                 Application layout, themes, and global styles
-  components/          Chat, settings, Markdown, and other UI components
-  i18n/                English and Chinese translations
-  services/
-    api/               API requests, SSE, and protocol types
-    chat/              Conversations, message branches, storage, and history import/export
-    markdown/          Markdown parsing, syntax highlighting, and diagrams
-    speech/            Audio recording and read-aloud playback
-  utils/               Shared utilities
+All brand fields live in `src/brand.ts`: app name, short name, description, theme and background colors. Re-run `pnpm build` (plus `pnpm icons` if you changed the icon source) and the page title, manifest, and system prompt all update.
+
+## Deploy (Cloudflare Pages)
+
+```sh
+pnpm build
+npx wrangler pages project create appchat
+npx wrangler pages deploy dist --project-name appchat
+```
+
+Custom domain: Pages console → appchat → Custom domains → add `chat.ldx9706.cloud`, then add a
+CNAME record for that subdomain in your DNS provider pointing at the assigned `<project>.pages.dev`.
+
+## Android APK (TWA)
+
+```sh
+npx @bubblewrap/cli init --manifest https://chat.ldx9706.cloud/manifest.webmanifest
+npx @bubblewrap/cli build
+```
+
+- **Back up the signing keystore** (`android.keystore` plus its password) generated by `bubblewrap init` — losing it means the app can never be updated under the same package name.
+- Put the generated `assetlinks.json` into `public/.well-known/` and redeploy the site, or the TWA keeps its address bar.
+- A new keystore fingerprint requires republishing assetlinks.
+
+## Syncing upstream
+
+```sh
+git fetch upstream
+git merge upstream/main   # upstream = deepseek-ai/chat-demo, full history preserved
 ```
 
 ## License
 
-[MIT](LICENSE). The build copies the license to `dist/LICENSE`; include it when distributing the app. Third-party dependencies are subject to their own licenses.
+MIT. The upstream copyright notice is retained (see `LICENSE`), with an appended statement covering our modifications.
