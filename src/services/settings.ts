@@ -7,9 +7,11 @@ export type Locale = 'zh-CN' | 'en-US'
 /** 主题偏好；默认跟随系统 */
 export type ThemePreference = 'light' | 'dark' | 'system'
 
-/** 本机设置，存 localStorage：API Key、语言、主题、位置、朗读音色、深度思考与智能搜索开关、侧边栏收起状态 */
+/** 本机设置，存 localStorage：API Key、API 地址、语言、主题、位置、朗读音色、深度思考与智能搜索开关、侧边栏收起状态 */
 type Settings = {
   apiKey: string | null
+  /** API 地址覆盖，空串表示用构建期默认值；修改后刷新页面生效 */
+  apiOrigin: string
   locale: Locale
   themePreference: ThemePreference
   location: UserLocation | null
@@ -21,6 +23,7 @@ type Settings = {
 
 const KEYS = {
   apiKey: 'chat-demo:api-key',
+  apiOrigin: 'chat-demo:api-origin',
   locale: 'chat-demo:locale',
   location: 'chat-demo:location',
   themePreference: 'chat-demo:theme-preference',
@@ -87,8 +90,18 @@ const initialThemePreference = (): ThemePreference => {
 /** 未保存过时使用服务端默认音色 stella（海星） */
 const initialTtsVoice = (): TtsVoice => (read(KEYS.ttsVoice) === 'tide' ? 'tide' : 'stella')
 
+/** https:// 起头才视为有效覆盖；本机调试放行 http://localhost / 127.0.0.1，其余一律回落默认值 */
+const normalizeApiOrigin = (value: string | null): string => {
+  const origin = value?.trim() ?? ''
+  if (/^https:\/\/\S+/.test(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(origin)) {
+    return origin.replace(/\/+$/, '')
+  }
+  return ''
+}
+
 export const useSettings = create<Settings>(() => ({
   apiKey: read(KEYS.apiKey),
+  apiOrigin: normalizeApiOrigin(read(KEYS.apiOrigin)),
   locale: initialLocale(),
   location: initialLocation(),
   themePreference: initialThemePreference(),
@@ -122,6 +135,13 @@ export const setTtsVoice = (ttsVoice: TtsVoice) => {
 export const setApiKey = (apiKey: string | null) => {
   write(KEYS.apiKey, apiKey)
   useSettings.setState({ apiKey })
+}
+
+/** 保存 API 地址覆盖；空串恢复默认。调用方随后刷新页面让所有模块重新取值。 */
+export const setApiOrigin = (value: string | null) => {
+  const apiOrigin = normalizeApiOrigin(value)
+  write(KEYS.apiOrigin, apiOrigin || null)
+  useSettings.setState({ apiOrigin })
 }
 
 export const setThinking = (thinking: boolean) => {

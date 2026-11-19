@@ -20,6 +20,7 @@ import { useChatStore } from '../../services/chat/store.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
 import {
   isChineseBrowser,
+  setApiOrigin,
   setLocale,
   setLocation,
   setThemePreference,
@@ -104,6 +105,7 @@ const SettingsContent = () => {
           ) : (
             <>
               <ApiKeyField editor={apiKeyEditor} />
+              <ApiOriginSetting />
               <ImportHistory historyImport={historyImport} disabled={historyBusy} />
               <ExportHistory disabled={historyBusy} />
               <SettingCell
@@ -311,6 +313,78 @@ const TtsVoiceSetting = () => {
         />
       }
     />
+  )
+}
+
+/** API 地址覆盖合法形态：https:// 任意主机；本机调试放行 http://localhost / 127.0.0.1 */
+const API_ORIGIN_PATTERN = /^https:\/\/\S+$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/
+
+/**
+ * API 地址覆盖：留空走构建期默认 https://api.deepseek.com。
+ * 全部请求地址在模块加载期计算，保存后刷新页面生效。
+ */
+const ApiOriginSetting = () => {
+  const t = useTranslate()
+  const apiOrigin = useSettings((state) => state.apiOrigin)
+  const [value, setValue] = useState(apiOrigin)
+  const [invalid, setInvalid] = useState(false)
+
+  const save = () => {
+    const origin = value.trim().replace(/\/+$/, '')
+    if (origin && !API_ORIGIN_PATTERN.test(origin)) {
+      setInvalid(true)
+      return
+    }
+    setApiOrigin(origin)
+    location.reload()
+  }
+
+  return (
+    <div className={styles.cell}>
+      <div className={styles.apiKey}>
+        <div className={styles.label}>{t('settingsApiOrigin')}</div>
+        <div className={styles.apiKeyInput}>
+          <input
+            type="url"
+            inputMode="url"
+            placeholder={t('settingsApiOriginPlaceholder')}
+            autoComplete="off"
+            spellCheck={false}
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value)
+              setInvalid(false)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                save()
+              }
+            }}
+          />
+          {value.trim() ? (
+            <>
+              <span className={styles.divider} />
+              <button type="button" className={styles.confirm} onClick={save}>
+                {t('confirm')}
+              </button>
+            </>
+          ) : apiOrigin ? (
+            <button
+              type="button"
+              className={styles.confirm}
+              onClick={() => {
+                setApiOrigin('')
+                location.reload()
+              }}
+            >
+              {t('settingsApiOriginReset')}
+            </button>
+          ) : null}
+        </div>
+        <div className={styles.description}>{t('settingsApiOriginDescription')}</div>
+        {invalid ? <div className={styles.error}>{t('settingsApiOriginInvalid')}</div> : null}
+      </div>
+    </div>
   )
 }
 
